@@ -8,7 +8,9 @@ def index(request):
 
 
 def index2(request):
-    return HttpResponse('This is the rango page <br/> <a href="about/"> About</a>')
+    context_dict = {'boldmessage': "Crunchy, creamy, cookie, candy, cupcake!"}
+
+    return render(request, 'rango/index.html', context=context_dict)
 
 
 def about(request):
