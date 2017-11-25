@@ -1,0 +1,13 @@
+<ul>
+    <strong>List of all categories</strong>
+    {% for cat in categories %}
+        {% if cat == act_category %}
+            <strong>
+            <li><a href="{% url 'show_category' cat.slug %}">{{ cat.name }}</a></li>
+            </strong>
+        {% else %}
+            <li><a href="{% url 'show_category' cat.slug %}">{{ cat.name }}</a></li>
+        {% endif %}
+    {% endfor %}
+
+</ul>
