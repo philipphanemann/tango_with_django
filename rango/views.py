@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rango.models import Category, Page
-from rango.forms import CategoryForm, PageForm
+from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 
 
 def index(request):
@@ -95,3 +95,43 @@ def add_page(request, category_name_slug):
 
     context_dict = {'form': form, 'category': category}
     return render(request, 'rango/add_page.html', context_dict)
+
+
+def register(request):
+    """ return True if the registration was successful, else false
+
+    1. deal with two forms 'user' and 'profile' and with the picture upload
+    2. link user_form information with profile_form information"""
+
+    registered = False
+    # process/grap form data if 'POST' request
+    if request.method == 'POST':
+        user_form = UserForm(data=request.POST)
+        profile_form = UserProfileForm(data=request.POST)
+
+        if user_form.is_valid() and profile_form.is_valid():
+            # save to database
+            user = user_form.save()
+            # hash password and update user object
+            user.set_password(user.password)
+            user.save()
+            # user attribute is not yet set at profile_form.
+            # We commit/save it later to the database
+            profile = profile_form.save(commit=False)
+            profile.user = user
+            # save profile picture if provided
+            if 'picture' in request.FILES:
+                profile.picture = request.FILES['picture']
+            profile.save()
+            registered = True
+        else:
+            print(user_form.errors, profile_form.errors)
+    else:
+        # render blank form, ready for input - use two ModelForm instances
+        user_form = UserForm()
+        profile_form = UserProfileForm()
+    return render(request,
+                  'rango/register.html',
+                  {'user_form': user_form,
+                   'profile_form': profile_form,
+                   'registered': registered})
