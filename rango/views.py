@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
@@ -171,3 +171,10 @@ def user_login(request):
 def restricted(request):
     """ trial for login_required decorator """
     return HttpResponse("Since you are logged in, you can see this text.")
+
+
+@login_required
+def user_logout(request):
+    """ logout and redirect """
+    logout(request)
+    return HttpResponseRedirect(reverse('index'))
