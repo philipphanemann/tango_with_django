@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponseRedirect, HttpResponse
@@ -5,6 +6,26 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 from rango.models import Category, Page
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
+
+
+def visitor_cookie_handler(request, response):
+    """ get the number of visits to the site
+
+    actually, this is a helper func not a proper view (no HTTPResponse object)
+    use COOKIES.get() to obtain visits cookie returns casted int or 1"""
+
+    visits = int(request.COOKIES.get('visits', '1'))
+    last_visit_cookie = request.COOKIES.get('last_visit', str(datetime.now()))
+    last_visit_time = datetime.strptime(last_visit_cookie[:-7],
+                                        '%Y-%m-%d %H:%M:%S')
+
+    if (datetime.now() - last_visit_time).days > 0:
+        visits += 1
+        response.set_cookie('last_visit', str(datetime.now()))
+    else:
+        visits = 1
+        response.set_cookie('last_visit', last_visit_cookie)
+    response.set_cookie('visits', visits)
 
 
 def index(request):
@@ -26,7 +47,12 @@ def index(request):
     category_list = Category.objects.order_by('-likes')[:5]
     top_5_pages = Page.objects.order_by('views')[:5]
     context_dict = {'categories': category_list, 'pages': top_5_pages}
-    return render(request, 'rango/index.html', context=context_dict)
+
+    # obtain our Response object early to add cookie information
+    response = render(request, 'rango/index.html', context=context_dict)
+    visitor_cookie_handler(request, response)
+    # return response with updated cookie information to the user
+    return response
 
 
 def about(request):
