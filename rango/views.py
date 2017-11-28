@@ -22,6 +22,7 @@ def index(request):
     3. additional information can be passed"""
 
     # using ('-likes') for descending is 50 % faster than ('likes').reverse()
+    request.session.set_test_cookie()
     category_list = Category.objects.order_by('-likes')[:5]
     top_5_pages = Page.objects.order_by('views')[:5]
     context_dict = {'categories': category_list, 'pages': top_5_pages}
@@ -29,9 +30,8 @@ def index(request):
 
 
 def about(request):
-    print(request.method)
-
-    print(request.user)
+    if request.session.test_cookie_worked():
+        print('TEST COOKIE WORKDED!')
     return render(request, 'rango/about.html')
 
 
