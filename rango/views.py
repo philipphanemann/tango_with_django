@@ -8,24 +8,36 @@ from rango.models import Category, Page
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 
 
-def visitor_cookie_handler(request, response):
-    """ get the number of visits to the site
+def get_server_side_cookie(request, cookie, default=None):
+    """ return server side cookie if exists else default """
+    val = request.session.get(cookie)
+    if not val:
+        val = default
+    return val
 
-    actually, this is a helper func not a proper view (no HTTPResponse object)
-    use COOKIES.get() to obtain visits cookie returns casted int or 1"""
 
-    visits = int(request.COOKIES.get('visits', '1'))
-    last_visit_cookie = request.COOKIES.get('last_visit', str(datetime.now()))
+def visitor_cookie_handler(request):
+    """ helper function to get the number of visits to the site
+
+    Server side cookies are encouraged.
+    The code for client side cookies is in chapter 10.5
+    """
+
+    visits = int(get_server_side_cookie(request, 'visits', default=1))
+    last_visit_cookie = get_server_side_cookie(request,
+                                               'last_visit',
+                                               str(datetime.now()))
     last_visit_time = datetime.strptime(last_visit_cookie[:-7],
                                         '%Y-%m-%d %H:%M:%S')
 
     if (datetime.now() - last_visit_time).days > 0:
         visits += 1
-        response.set_cookie('last_visit', str(datetime.now()))
+        request.session['last_visit'] = str(datetime.now())
     else:
+        # TODO: setting visits might not be necessary
         visits = 1
-        response.set_cookie('last_visit', last_visit_cookie)
-    response.set_cookie('visits', visits)
+        request.session['last_visit'] = last_visit_cookie
+    request.session['visits'] = visits
 
 
 def index(request):
@@ -48,9 +60,10 @@ def index(request):
     top_5_pages = Page.objects.order_by('views')[:5]
     context_dict = {'categories': category_list, 'pages': top_5_pages}
 
-    # obtain our Response object early to add cookie information
+    visitor_cookie_handler(request)
+    context_dict['visits'] = request.session['visits']
     response = render(request, 'rango/index.html', context=context_dict)
-    visitor_cookie_handler(request, response)
+
     # return response with updated cookie information to the user
     return response
 
